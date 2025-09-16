@@ -1,0 +1,49 @@
+{
+  "name": "CSV to JSON Converter",
+  "short_name": "CSV2JSON",
+  "description": "Convert CSV and Excel files to JSON format instantly with our free online tool",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#667eea",
+  "theme_color": "#667eea",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "assets/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["utilities", "productivity", "developer"],
+  "screenshots": [
+    {
+      "src": "assets/screenshot-desktop.jpg",
+      "sizes": "1200x630",
+      "type": "image/jpeg",
+      "form_factor": "wide"
+    },
+    {
+      "src": "assets/screenshot-mobile.jpg",
+      "sizes": "375x667",
+      "type": "image/jpeg",
+      "form_factor": "narrow"
+    }
+  ]
+}

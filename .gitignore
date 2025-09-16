@@ -1,3 +1,45 @@
+# Dependencies
 /node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
 /.idea/
+/.vscode/
+*.swp
+*.swo
+
+# Angular
 /.angular/
+/dist/
+/tmp/
+/out-tsc/
+/bazel-out
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Testing
+/coverage
+*.lcov
+
+# Backup files
+*-backup.*
+*-old.*
+*-new.*
+*.backup

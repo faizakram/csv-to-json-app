@@ -1,7 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import * as Papa from 'papaparse';
-import * as XLSX from 'xlsx';
+import { SEOService } from '../services/seo.service';
 
 interface ParsedData {
   [key: string]: any;
@@ -37,6 +36,24 @@ export class FileUploadComponent {
   selectedSheets = signal<string[]>([]);
   showSheetSelector = signal<boolean>(false);
 
+  // Computed properties for sheet selection state
+  get selectionPercentage(): number {
+    const excelData = this.excelData();
+    if (!excelData || excelData.sheets.length === 0) return 0;
+    return (this.selectedSheets().length / excelData.sheets.length) * 100;
+  }
+
+  get isAllSelected(): boolean {
+    return this.selectionPercentage === 100;
+  }
+
+  get isPartiallySelected(): boolean {
+    const percentage = this.selectionPercentage;
+    return percentage > 0 && percentage < 100;
+  }
+
+  constructor(private readonly seoService: SEOService) {}
+
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) {
@@ -71,6 +88,33 @@ export class FileUploadComponent {
     this.processFile(files[0]);
   }
 
+  onUploadAreaClick(event: Event): void {
+    // Only trigger file input if click wasn't on the label or input itself
+    const target = event.target as HTMLElement;
+    if (target.tagName !== 'LABEL' && target.tagName !== 'INPUT') {
+      // Check if we're in browser environment (SSR-safe)
+      if (typeof document !== 'undefined') {
+        const fileInput = document.getElementById('dataFile') as HTMLInputElement;
+        if (fileInput) {
+          fileInput.click();
+        }
+      }
+    }
+  }
+
+  onUploadAreaKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      // Create a synthetic event for file input trigger
+      if (typeof document !== 'undefined') {
+        const fileInput = document.getElementById('dataFile') as HTMLInputElement;
+        if (fileInput) {
+          fileInput.click();
+        }
+      }
+    }
+  }
+
   private processFile(file: File): void {
     const fileName = file.name.toLowerCase();
     const isCSV = fileName.endsWith('.csv');
@@ -86,6 +130,9 @@ export class FileUploadComponent {
     this.error.set('');
     this.isLoading.set(true);
     this.resetData();
+    
+    // Update SEO for file processing
+    this.seoService.updateForFileProcessing();
 
     if (isCSV) {
       this.fileType.set('csv');
@@ -104,27 +151,37 @@ export class FileUploadComponent {
     this.copySuccess.set(false);
   }
 
-  private processCSVFile(file: File): void {
+  private async processCSVFile(file: File): Promise<void> {
+    try {
+      // Dynamically import papaparse only when needed
+      const Papa = await import('papaparse');
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        this.processCSVData(results.data as ParsedData[]);
-        this.isLoading.set(false);
-      },
-      error: (error) => {
-        this.error.set(`Error parsing CSV: ${error.message}`);
-        this.isLoading.set(false);
-      }
-    });
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results: any) => {
+          this.processCSVData(results.data as ParsedData[]);
+          this.isLoading.set(false);
+        },
+        error: (error: any) => {
+          this.error.set(`Error parsing CSV: ${error.message}`);
+          this.isLoading.set(false);
+        }
+      });
+    } catch (error) {
+      this.error.set(`Error loading CSV parser: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.isLoading.set(false);
+    }
   }
 
-  private processExcelFile(file: File): void {
+  private async processExcelFile(file: File): Promise<void> {
     const reader = new FileReader();
     
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
+        // Dynamically import xlsx only when needed
+        const XLSX = await import('xlsx');
+        
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         
@@ -134,7 +191,7 @@ export class FileUploadComponent {
         };
 
         // Process all sheets
-        workbook.SheetNames.forEach(sheetName => {
+        workbook.SheetNames.forEach((sheetName: string) => {
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
           
@@ -143,15 +200,7 @@ export class FileUploadComponent {
             const headers = jsonData[0] as string[];
             const rows = jsonData.slice(1) as any[][];
             
-            const sheetData = rows.map(row => {
-              const obj: ParsedData = {};
-              headers.forEach((header, index) => {
-                if (header && row[index] !== undefined) {
-                  obj[header] = row[index];
-                }
-              });
-              return obj;
-            }).filter(obj => Object.keys(obj).length > 0);
+            const sheetData = this.processExcelRows(headers, rows);
 
             if (sheetData.length > 0) {
               excelData.sheets.push({
@@ -187,6 +236,18 @@ export class FileUploadComponent {
     };
 
     reader.readAsArrayBuffer(file);
+  }
+
+  private processExcelRows(headers: string[], rows: any[][]): ParsedData[] {
+    return rows.map(row => {
+      const obj: ParsedData = {};
+      headers.forEach((header, index) => {
+        if (header && row[index] !== undefined) {
+          obj[header] = row[index];
+        }
+      });
+      return obj;
+    }).filter(obj => Object.keys(obj).length > 0);
   }
 
   generateExcelJSON(): void {
@@ -228,9 +289,22 @@ export class FileUploadComponent {
   selectAllSheets(): void {
     const excelData = this.excelData();
     if (excelData) {
-      this.selectedSheets.set(excelData.sheets.map(sheet => sheet.name));
+      if (this.isAllSelected) {
+        // If all sheets are selected, deselect all
+        this.selectedSheets.set([]);
+      } else {
+        // If not all sheets are selected, select all
+        this.selectedSheets.set(excelData.sheets.map(sheet => sheet.name));
+      }
       this.generateExcelJSON();
     }
+  }
+
+  convertSelectedSheets(): void {
+    // This method is called when user wants to convert selected sheets
+    // The conversion already happens in generateExcelJSON which is called
+    // whenever sheet selection changes, so we just need to ensure it's called
+    this.generateExcelJSON();
   }
 
   deselectAllSheets(): void {
@@ -243,6 +317,9 @@ export class FileUploadComponent {
       // Convert CSV data to JSON using the same logic as the Python script
       const processedData = this.convertCSVToTalentHubFormat(data);
       this.jsonData.set(JSON.stringify(processedData, null, 2));
+      
+      // Update SEO for successful processing
+      this.seoService.updateForFileProcessed();
     } catch (error) {
       this.error.set(`Error processing data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -402,7 +479,12 @@ export class FileUploadComponent {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = this.fileName().replace('.csv', '.json');
+    
+    // Get the original filename without extension and add .json
+    const originalFileName = this.fileName();
+    const fileNameWithoutExtension = originalFileName.replace(/\.(csv|xlsx?|xls)$/i, '');
+    link.download = `${fileNameWithoutExtension}.json`;
+    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -435,6 +517,15 @@ export class FileUploadComponent {
 
   private showClipboardUnsupported(): void {
     alert('Clipboard not supported. Please select and copy the JSON manually from the output area.');
+  }
+
+  clearResults(): void {
+    this.jsonData.set('');
+    this.error.set('');
+    this.copySuccess.set(false);
+    this.excelData.set(null);
+    this.selectedSheets.set([]);
+    this.showSheetSelector.set(false);
   }
 
   clearData(): void {
