@@ -299,4 +299,234 @@ h2 {
   .upload-section { padding: 30px 15px; }
   .file-label, .download-btn, .copy-btn, .clear-btn { font-size: 0.9rem; padding: 12px 24px; }
   .json-output { font-size: 11px; max-height: 350px; }
+  
+  .sheet-selector-section { padding: 15px; }
+  .sheet-list { gap: 10px; }
+  .sheet-actions { flex-direction: column; gap: 10px; }
+}
+
+/* File Type Badge */
+.file-type-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-left: 8px;
+  animation: fadeIn 0.3s ease;
+}
+
+.file-type-badge.csv {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  color: white;
+}
+
+.file-type-badge.excel {
+  background: linear-gradient(135deg, #3182ce 0%, #2b77cb 100%);
+  color: white;
+}
+
+/* Excel Sheet Selector */
+.sheet-selector-section {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  padding: 25px;
+  margin: 20px 0;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(10px);
+  animation: slideIn 0.5s ease-out;
+}
+
+.sheet-selector-section h3 {
+  color: #2d3748;
+  margin-bottom: 10px;
+  font-size: 1.4rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sheet-info {
+  color: #4a5568;
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+  background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.sheet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.sheet-item {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.sheet-item:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
+  transform: translateY(-2px);
+}
+
+.sheet-checkbox {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  cursor: pointer;
+  position: relative;
+  width: 100%;
+}
+
+.sheet-checkbox input[type="checkbox"] {
+  opacity: 0;
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.checkmark {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #cbd5e0;
+  border-radius: 4px;
+  margin-right: 15px;
+  position: relative;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.sheet-checkbox input:checked ~ .checkmark {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+}
+
+.sheet-checkbox input:checked ~ .checkmark::after {
+  content: '✓';
+  position: absolute;
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.sheet-info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.sheet-name {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 1rem;
+}
+
+.sheet-records {
+  font-size: 0.85rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+.sheet-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.select-all-btn,
+.deselect-all-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.select-all-btn {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+}
+
+.select-all-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(72, 187, 120, 0.4);
+}
+
+.deselect-all-btn {
+  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+}
+
+.deselect-all-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(229, 62, 62, 0.4);
+}
+
+/* Upload Icons */
+.upload-icon-large svg {
+  color: #667eea;
+  filter: drop-shadow(0 4px 8px rgba(102, 126, 234, 0.3));
+}
+
+.upload-icon svg {
+  color: inherit;
+  vertical-align: middle;
+}
+
+/* Button icons */
+.download-btn svg,
+.copy-btn svg,
+.clear-btn svg,
+.select-all-btn svg,
+.deselect-all-btn svg {
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+/* Sheet selector icons */
+.sheet-selector-section h3 svg {
+  margin-right: 8px;
+  color: #667eea;
+  vertical-align: middle;
+}
+.sheet-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sheet-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.sheet-list::-webkit-scrollbar-thumb {
+  background: #667eea;
+  border-radius: 3px;
+}
+
+.sheet-list::-webkit-scrollbar-thumb:hover {
+  background: #5a67d8;
 }

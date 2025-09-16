@@ -17,3 +17,22 @@ body {
 html, body {
   height: 100%;
 }
+
+/* SVG Icon Styles */
+svg {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* Button and interactive element icon spacing */
+button svg {
+  pointer-events: none;
+}
+
+/* Ensure icons don't break layout */
+.icon-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
