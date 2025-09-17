@@ -1,3 +1,55 @@
-<div class="app-container">
-  <app-file-upload></app-file-upload>
-</div>
+<header role="banner">
+  <nav aria-label="Main navigation" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem;">
+    <!-- Theme toggle in header -->
+    <div></div> <!-- Spacer for flex layout -->
+    <app-theme-toggle></app-theme-toggle>
+  </nav>
+</header>
+
+<main role="main" class="app-container" id="converter">
+  <article>
+    <header>
+      <h1>Free CSV & Excel to JSON Converter</h1>
+      <p>Convert your spreadsheet data to JSON format instantly with our secure, browser-based tool</p>
+    </header>
+    
+    <section aria-label="File converter tool">
+      <app-file-upload></app-file-upload>
+    </section>
+    
+    <section id="how-to-use" aria-label="How to use instructions">
+      <h2>How to Convert Your Files</h2>
+      <ol>
+        <li><strong>Upload:</strong> Drag & drop or click to select your CSV or Excel file</li>
+        <li><strong>Select Sheet:</strong> For Excel files, choose which sheet to convert (if multiple)</li>
+        <li><strong>Download:</strong> Get your converted JSON file instantly</li>
+      </ol>
+    </section>
+    
+    <section id="features" aria-label="Key features">
+      <h2>Why Choose Our Converter?</h2>
+      <ul>
+        <li>✅ <strong>100% Free</strong> - No registration or hidden fees</li>
+        <li>🔒 <strong>Secure</strong> - All processing happens in your browser</li>
+        <li>⚡ <strong>Fast</strong> - Instant conversion with no server delays</li>
+        <li>📊 <strong>Multi-format</strong> - Supports CSV and Excel (.xlsx, .xls)</li>
+        <li>🔄 <strong>Multi-sheet</strong> - Handle Excel workbooks with multiple sheets</li>
+        <li>🎯 <strong>Smart Processing</strong> - Automatic data type detection and normalization</li>
+      </ul>
+    </section>
+  </article>
+</main>
+
+<footer role="contentinfo" style="text-align: center; padding: 2rem; margin-top: 2rem; border-top: 1px solid #e0e0e0;">
+  <p>&copy; 2025 CSV to JSON Converter. Free online tool for data conversion.</p>
+  <p>
+    <small>
+      Visit us at: <a href="https://csvtojson.faizakram.com/" target="_blank" rel="noopener noreferrer">https://csvtojson.faizakram.com/</a>
+    </small>
+  </p>
+  <p>
+    <small>
+      Keywords: CSV to JSON, Excel to JSON, data converter, spreadsheet converter, JSON parser, file converter
+    </small>
+  </p>
+</footer>

@@ -1,0 +1,34 @@
+User-agent: *
+Allow: /
+
+# Important pages
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://csv-to-json-converter.app/sitemap.xml
+
+# Disallow common non-public directories
+Disallow: /admin/
+Disallow: /private/
+Disallow: /temp/
+Disallow: /.git/
+Disallow: /node_modules/
+Disallow: /src/
+Disallow: /*.json$
+Disallow: /*?*
+
+# Allow specific file types that are important for SEO
+Allow: *.css
+Allow: *.js
+Allow: *.png
+Allow: *.jpg
+Allow: *.jpeg
+Allow: *.gif
+Allow: *.svg
+Allow: *.webp
+Allow: *.ico
+Allow: *.pdf
+
+# Important: Allow the main converter page
+Allow: /
+Allow: /index.html

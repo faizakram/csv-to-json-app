@@ -11,9 +11,11 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   position: relative;
-  background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #45b7d1);
+  background: var(--gradient-primary);
   background-size: 400% 400%;
   animation: gradientMove 8s ease infinite;
+  color: var(--text-color);
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 /* Standard gradient animation */
@@ -42,19 +44,163 @@ body::before {
               radial-gradient(circle at 40% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
   pointer-events: none;
   z-index: -1;
+  transition: background 0.3s ease;
 }
 
-/* Remove complex wave animation - keeping it simple */
+/* Dark theme overlay adjustment */
+:global(.dark-theme) body::before {
+  background: radial-gradient(circle at 20% 50%, rgba(0, 0, 0, 0.2) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(0, 0, 0, 0.2) 0%, transparent 50%),
+              radial-gradient(circle at 40% 80%, rgba(0, 0, 0, 0.2) 0%, transparent 50%);
+}
 
 .app-container {
-  min-height: 100vh;
+  min-height: calc(100vh - 80px);
   padding: 20px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   animation: fadeIn 0.8s ease-out;
   position: relative;
   z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Header styles for semantic structure */
+header[role="banner"] {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+header[role="banner"] nav {
+  display: none; /* Hidden for now, can be revealed later */
+}
+
+main {
+  width: 100%;
+  max-width: 1000px;
+}
+
+main > article > header {
+  text-align: center;
+  margin-bottom: 3rem;
+  color: var(--text-inverse);
+}
+
+main > article > header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  text-shadow: 2px 2px 4px var(--shadow-light);
+  line-height: 1.2;
+}
+
+main > article > header p {
+  font-size: 1.2rem;
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.4;
+}
+
+/* Section styles for SEO content */
+section[aria-label="File converter tool"] {
+  margin-bottom: 3rem;
+}
+
+section[aria-label="How to use instructions"],
+section[aria-label="Key features"] {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  color: white;
+}
+
+section[aria-label="How to use instructions"] h2,
+section[aria-label="Key features"] h2 {
+  color: white;
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+section[aria-label="How to use instructions"] ol {
+  list-style: none;
+  counter-reset: step-counter;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+section[aria-label="How to use instructions"] li {
+  counter-increment: step-counter;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  position: relative;
+  padding-left: 3.5rem;
+}
+
+section[aria-label="How to use instructions"] li::before {
+  content: counter(step-counter);
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  color: white;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+section[aria-label="Key features"] ul {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+}
+
+section[aria-label="Key features"] li {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+footer[role="contentinfo"] {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  text-align: center;
+  padding: 2rem;
+  margin-top: 2rem;
+  border-radius: 15px 15px 0 0;
+}
+
+footer[role="contentinfo"] p {
+  margin-bottom: 0.5rem;
+}
+
+footer[role="contentinfo"] small {
+  opacity: 0.7;
+  font-size: 0.85rem;
 }
 
 /* Simple glassmorphism effect */
@@ -90,6 +236,15 @@ body::before {
   .app-container {
     padding: 15px;
   }
+  
+  main > article > header h1 {
+    font-size: 2.2rem;
+  }
+  
+  section[aria-label="How to use instructions"],
+  section[aria-label="Key features"] {
+    padding: 1.5rem;
+  }
 }
 
 @media (max-width: 768px) {
@@ -105,6 +260,18 @@ body::before {
     bottom: -15px;
     border-radius: 20px;
   }
+  
+  main > article > header h1 {
+    font-size: 2rem;
+  }
+  
+  main > article > header p {
+    font-size: 1.1rem;
+  }
+  
+  section[aria-label="Key features"] ul {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 480px) {
@@ -118,6 +285,24 @@ body::before {
     right: -10px;
     bottom: -10px;
     border-radius: 15px;
+  }
+  
+  main > article > header h1 {
+    font-size: 1.8rem;
+  }
+  
+  main > article > header p {
+    font-size: 1rem;
+  }
+  
+  section[aria-label="How to use instructions"],
+  section[aria-label="Key features"] {
+    padding: 1rem;
+  }
+  
+  section[aria-label="How to use instructions"] h2,
+  section[aria-label="Key features"] h2 {
+    font-size: 1.5rem;
   }
 }
 
@@ -146,4 +331,31 @@ body::before {
     background: rgba(255, 255, 255, 0.1);
     border: 2px solid rgba(255, 255, 255, 0.3);
   }
+}
+
+/* Focus styles for accessibility */
+a:focus,
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Skip link for keyboard navigation */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: #667eea;
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+  border-radius: 4px;
+  z-index: 1000;
+}
+
+.skip-link:focus {
+  top: 6px;
 }

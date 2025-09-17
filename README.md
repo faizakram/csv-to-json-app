@@ -1,30 +1,72 @@
-# CsvToJsonApp
+# CSV & Excel to JSON Converter
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.1.
+A modern Angular application that converts CSV and Excel files to JSON format with advanced processing capabilities.
 
-## Development server
+## ✨ Features
+
+- 📊 **Multi-format Support**: CSV (.csv) and Excel (.xlsx, .xls) files
+- 📋 **Excel Tab Processing**: Handle multiple worksheets with individual selection
+- 🔧 **Advanced Processing**: Array-style columns, data normalization, type conversion
+- 🎨 **Modern UI**: Glassmorphism design with drag & drop interface
+- 📱 **Responsive**: Works perfectly on desktop, tablet, and mobile
+
+## 🚀 Quick Start
+
+### Development server
 
 To start a local development server, run:
 
 ```bash
+npm install
 ng serve
 ```
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 
-## Code scaffolding
+## 📋 Usage
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+### CSV Files
+1. Drag and drop or select a CSV file
+2. File is automatically processed and converted to JSON
+3. Download or copy the result
 
-```bash
-ng generate component component-name
+### Excel Files
+1. Select an Excel file (.xlsx or .xls)
+2. View all detected worksheets with record counts
+3. Select which sheets to include in the conversion
+4. Choose individual sheets or use "Select All"/"Deselect All"
+5. Download or copy the generated JSON
+
+### Output Formats
+- **Single sheet**: Exports as JSON array
+- **Multiple sheets**: Exports as JSON object with sheet names as keys
+
+## 🛠️ Technical Stack
+
+- **Angular 20.3.1** - Modern web framework
+- **TypeScript** - Type-safe development
+- **Papa Parse** - CSV parsing library
+- **xlsx** - Excel file processing
+- **Advanced CSS** - Glassmorphism design with animations
+
+## 📁 Project Structure
+
+```
+src/
+├── app/
+│   ├── file-upload/          # Main file processing component
+│   └── app.component.*       # Root component
+├── assets/                   # Static assets
+└── styles.css               # Global styles
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## 🎨 Features Demo
 
-```bash
-ng generate --help
-```
+- **Drag & Drop Interface**: Modern file upload with hover effects
+- **Real-time Processing**: Live conversion with loading indicators  
+- **Sheet Selection**: Interactive checkboxes for Excel worksheets
+- **Responsive Design**: Mobile-first approach with breakpoints
+- **Advanced CSS**: Glassmorphism, animations, and particle effects
 
 ## Building
 
