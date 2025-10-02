@@ -1,40 +1,12 @@
-docker run -d `
-  --name ftp-upload-only `
-  -p 21:21 -p 20:20 -p 21100-21110:21100-21110 `
-  -v C:\ftp\upload:/home/vsftpd `
-  -e FTP_ANON_ENABLE=YES `
-  -e FTP_ANON_UPLOAD_ENABLE=YES `
-  -e FTP_ANON_MKDIR_ENABLE=YES `
-  -e FTP_ANON_OTHER_WRITE_ENABLE=YES `
-  -e FTP_ANON_DOWNLOAD_ENABLE=NO `
-  -e PASV_MIN_PORT=21100 `
-  -e PASV_MAX_PORT=21110 `
-  fauria/vsftpd
-
-netsh advfirewall firewall add rule name="FTP Server" dir=in action=allow protocol=TCP localport=20-21,21100-21110
-netsh advfirewall firewall add rule name="FTP Passive" dir=in action=allow protocol=TCP localport=20-21,21100-21110
-
-
-
-echo "Hello FTP Test" > C:\ftp\test.txt
-ftp -n -s:<(echo open 192.168.2.7 & echo user anonymous & echo put C:\ftp\test.txt & echo bye)
-
-
-
-✅ Correct Run Command for Anonymous Upload-Only FTP
-
-Please stop your old container first:
-
 docker stop ftp-upload-only
 docker rm ftp-upload-only
 
-
-Then run a fresh one with anonymous enabled:
-
 docker run -d `
   --name ftp-upload-only `
   -p 21:21 -p 20:20 -p 21100-21110:21100-21110 `
   -v C:\ftp\upload:/home/vsftpd `
+  -e FTP_USER=disabled `
+  -e FTP_PASS=disabled `
   -e FTP_ANON_ENABLE=YES `
   -e FTP_ANON_UPLOAD_ENABLE=YES `
   -e FTP_ANON_MKDIR_ENABLE=YES `
@@ -43,33 +15,3 @@ docker run -d `
   -e PASV_MIN_PORT=21100 `
   -e PASV_MAX_PORT=21110 `
   fauria/vsftpd
-
-
-⚡ Key difference: we explicitly set
-FTP_ANON_ENABLE=YES (without this, login as anonymous won’t work).
-
-🔑 FileZilla Login
-
-Host: 192.168.2.7
-
-Username: anonymous
-
-Password: leave blank
-
-Port: 21
-
-🛠 Troubleshooting if Still 530
-
-Check logs of the container:
-
-docker logs ftp-upload-only
-
-
-You should see something like vsftpd: started.
-
-Make sure Windows firewall is open for 20, 21, and 21100–21110.
-
-Try passive mode in FileZilla:
-
-Go to Edit → Settings → FTP → Passive Mode → select Fall back to active.
-
