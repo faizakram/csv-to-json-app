@@ -60,13 +60,12 @@ explorer ftp://192.168.2.7/
 
 
 docker run -d `
-  --name ftp-auth-server `
-  -p 21:21 -p 20:20 -p 21100-21110:21100-21110 `
-  -v C:\ftp\data:/home/vsftpd `
-  -e FTP_USER=myuser `
-  -e FTP_PASS=mypassword `
-  -e PASV_MIN_PORT=21100 `
-  -e PASV_MAX_PORT=21110 `
-  -e PASV_ADDRESS=192.168.2.7 `
-  fauria/vsftpd
+  --name pure-ftp `
+  -e FTP_USER_NAME=myuser `
+  -e FTP_USER_PASS=mypassword `
+  -e FTP_USER_HOME=/home/ftpusers/myuser `
+  -p 21:21 -p 30000-30009:30000-30009 `
+  -v C:\ftp\data:/home/ftpusers/myuser `
+  stilliard/pure-ftpd:hardened
+
 
