@@ -1,9 +1,59 @@
-docker stop ftp-upload-only
-docker rm ftp-upload-only
+✅ Correct Pure-FTPd Command (no username, no password)
+
+Please stop old containers:
+
+docker stop ftp-anon-only
+docker rm ftp-anon-only
+
+
+Now run this instead:
 
 docker run -d `
   --name ftp-anon-only `
   -p 21:21 -p 20:20 -p 21100-21110:21100-21110 `
   -v C:\ftp\upload:/var/ftp:rw `
   stilliard/pure-ftpd:hardened `
-  pure-ftpd -E -j -R -P 192.168.2.7 -p 21100:21110 -A -x
+  pure-ftpd -E -A -x -j -R -P 192.168.2.7 -p 21100:21110
+
+What these flags mean:
+
+-E → only anonymous logins allowed
+
+-A → don’t ask for password
+
+-x → disable downloads (upload-only)
+
+-j → chroot (stay inside folder)
+
+-R → disallow symlinks
+
+-P → public IP (192.168.2.7)
+
+-p → passive port range
+
+🔑 Now try in Explorer
+
+Go to:
+
+ftp://192.168.2.7/
+
+
+👉 It should not ask for username or password, just open directly.
+Everything uploaded will go into:
+
+C:\ftp\upload
+
+
+⚡ If you still see the login popup:
+
+Check logs:
+
+docker logs ftp-anon-only
+
+
+Sometimes Windows Explorer caches old auth → try Win + R → type:
+
+explorer ftp://192.168.2.7/
+
+
+(instead of the normal Explorer window).
