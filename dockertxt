@@ -69,3 +69,17 @@ docker run -d `
   stilliard/pure-ftpd:hardened
 
 
+docker stop pure-ftp
+docker rm pure-ftp
+
+docker run -d `
+  --name pure-ftp `
+  -e FTP_USER_NAME=root `
+  -e FTP_USER_PASS=root `
+  -e FTP_USER_HOME=/home/ftpusers/myuser `
+  -p 21:21 -p 30000-30009:30000-30009 `
+  -v C:\ftp\data:/home/ftpusers/myuser `
+  stilliard/pure-ftpd:hardened `
+  pure-ftpd -E -j -R -P 192.168.2.7 -p 30000:30009
+
+
