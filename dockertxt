@@ -12,3 +12,8 @@ docker run -d `
   fauria/vsftpd
 
 netsh advfirewall firewall add rule name="FTP Server" dir=in action=allow protocol=TCP localport=20-21,21100-21110
+
+
+echo "Hello FTP Test" > C:\ftp\test.txt
+ftp -n -s:<(echo open 192.168.2.7 & echo user anonymous & echo put C:\ftp\test.txt & echo bye)
+
