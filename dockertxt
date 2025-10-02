@@ -2,16 +2,8 @@ docker stop ftp-upload-only
 docker rm ftp-upload-only
 
 docker run -d `
-  --name ftp-upload-only `
+  --name ftp-anon-only `
   -p 21:21 -p 20:20 -p 21100-21110:21100-21110 `
-  -v C:\ftp\upload:/home/vsftpd `
-  -e FTP_USER=disabled `
-  -e FTP_PASS=disabled `
-  -e FTP_ANON_ENABLE=YES `
-  -e FTP_ANON_UPLOAD_ENABLE=YES `
-  -e FTP_ANON_MKDIR_ENABLE=YES `
-  -e FTP_ANON_OTHER_WRITE_ENABLE=YES `
-  -e FTP_ANON_DOWNLOAD_ENABLE=NO `
-  -e PASV_MIN_PORT=21100 `
-  -e PASV_MAX_PORT=21110 `
-  fauria/vsftpd
+  -v C:\ftp\upload:/var/ftp:rw `
+  stilliard/pure-ftpd:hardened `
+  pure-ftpd -E -j -R -P 192.168.2.7 -p 21100:21110 -A -x
