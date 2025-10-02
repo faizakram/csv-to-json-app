@@ -83,3 +83,49 @@ docker run -d `
   pure-ftpd -E -j -R -P 192.168.2.7 -p 30000:30009
 
 
+✅ Correct Way to Set Up Pure-FTPd with User/Password
+1. Run the container
+docker run -d `
+  --name pure-ftp `
+  -p 21:21 -p 30000-30009:30000-30009 `
+  -v C:\ftp\data:/home/ftpusers/myuser `
+  -e PUBLICHOST=192.168.2.7 `
+  stilliard/pure-ftpd:hardened
+
+2. Create FTP User inside container
+
+Now exec into the container and add a virtual user:
+
+docker exec -it pure-ftp pure-pw useradd myuser -u ftpuser -d /home/ftpusers/myuser
+
+
+It will ask for a password (set mypassword).
+
+Then build the Pure-FTPd database:
+
+docker exec -it pure-ftp pure-pw mkdb
+
+
+Restart the container:
+
+docker restart pure-ftp
+
+3. Connect
+
+Now in FileZilla / Explorer:
+
+Host: 192.168.2.7
+
+Username: myuser
+
+Password: mypassword
+
+Port: 21
+
+⚡ Why your command failed
+
+The -e FTP_USER_NAME and -e FTP_USER_PASS method doesn’t work with this hardened Pure-FTPd image.
+
+You must use the pure-pw tool inside the container to create accounts.
+
+
