@@ -46,4 +46,6 @@ The -e FTP_USER_NAME and -e FTP_USER_PASS method doesn’t work with this harden
 
 You must use the pure-pw tool inside the container to create accounts.
 
+ftp://myuser:mypassword@192.168.2.7:21/
+
 
