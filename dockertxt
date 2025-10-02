@@ -10,3 +10,5 @@ docker run -d `
   -e PASV_MIN_PORT=21100 `
   -e PASV_MAX_PORT=21110 `
   fauria/vsftpd
+
+netsh advfirewall firewall add rule name="FTP Server" dir=in action=allow protocol=TCP localport=20-21,21100-21110
