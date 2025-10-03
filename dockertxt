@@ -62,6 +62,6 @@ docker run -it --rm `
   rclone/rclone:latest config
 
 
-
+https://login.microsoftonline.com/<tenant_id>/oauth2/v2.0/authorize?
 
 
