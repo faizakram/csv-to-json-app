@@ -53,15 +53,13 @@ docker run -d `
   --name ftp-to-onedrive-watch `
   -v C:\ftp\data:/data `
   -v C:\rclone-config:/config/rclone `
-  rclone/rclone:latest move /data onedrive:/FTPUploads --delete-empty-src-dirs --log-file /config/rclone/upload.log --log-level INFO --progress --bwlimit 5M --transfers=4 --checkers=8 --drive-chunk-size=64M --retries=5 --low-level-retries=10 --stats=30s
-
-docker run -d `
-  --name ftp-to-onedrive-watch `
-  -v C:\ftp\data:/data `
-  -v C:\rclone-config:/config/rclone `
   --entrypoint /bin/sh `
   rclone/rclone:latest `
   -c "while true; do rclone move /data onedrive:/FTPUploads --delete-empty-src-dirs --log-file /config/rclone/upload.log --log-level INFO; sleep 60; done"
+
+docker run -it --rm `
+  -v C:\rclone-config:/config/rclone `
+  rclone/rclone:latest config
 
 
 
