@@ -62,7 +62,13 @@ docker run -it --rm `
   rclone/rclone:latest config
 
 
-https://login.microsoftonline.com/517ceb53-ef1f-491f-b743-4f25bcd9612a/oauth2/v2.0/authorize?client_id=...&scope=...&redirect_uri=...
-```)
+https://login.microsoftonline.com/517ceb53-ef1f-491f-b743-4f25bcd9612a/oauth2/v2.0/authorize
+?client_id=YOUR_CLIENT_ID
+&response_type=code
+&redirect_uri=http://localhost:53682/
+&response_mode=query
+&scope=offline_access%20Files.ReadWrite%20Sites.ReadWrite.All
+&state=rclone
+
 
 
