@@ -1,12 +1,12 @@
 <div class="file-upload-container">
-  <h2>CSV to JSON Converter</h2>
-  <p class="description">
-    Advanced CSV converter supporting:
-    • Array-style columns like <code>field[0]</code>, <code>item[1]</code>
-    • Comma-separated values conversion
-    • Automatic data normalization
-    • Numeric field integer conversion
-  </p>
+  <div class="container-header">
+    <h2>CSV & Excel to JSON Converter</h2>
+    <p class="description">
+      Advanced file converter supporting CSV files (array-style columns, comma-separated values) 
+      and Excel files (multi-tab processing .xlsx, .xls) with automatic data normalization 
+      and numeric field integer conversion.
+    </p>
+  </div>
   
   <div class="upload-section" 
        [class.drag-over]="isDragOver()"
@@ -14,36 +14,60 @@
        (dragleave)="onDragLeave($event)"
        (drop)="onDrop($event)">
     
-    <div class="drag-drop-area">
-      <div class="upload-icon-large">📁</div>
-      <h3>Drag & Drop CSV Files Here</h3>
+        <div class="drag-drop-area" 
+         (click)="onUploadAreaClick($event)"
+         (keydown)="onUploadAreaKeydown($event)"
+         tabindex="0"
+         role="button"
+         aria-label="Upload file area - click to select or drag and drop files">
+      
+      <div class="upload-icon-large">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7,10 12,15 17,10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </div>
+      
+      <h3>Drag & Drop CSV or Excel Files Here</h3>
       <p class="drag-text">or click to browse</p>
       
       <div class="file-input-wrapper">
         <input 
           type="file" 
-          id="csvFile" 
-          accept=".csv" 
+          id="dataFile" 
+          accept=".csv,.xlsx,.xls" 
           (change)="onFileSelected($event)"
           class="file-input"
+          aria-label="Select CSV or Excel file to convert"
         />
-        <label for="csvFile" class="file-label">
-          <span class="upload-icon">📁</span>
-          Choose CSV File
+        <label for="dataFile" class="file-label">
+          <span class="upload-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7,10 12,15 17,10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </span>
+          Choose File
         </label>
       </div>
     </div>
     
     @if (fileName()) {
       <div class="file-info">
-        <p>Selected: {{ fileName() }}</p>
+        <p>Selected: {{ fileName() }} 
+          <span class="file-type-badge" [class]="fileType()">
+            {{ fileType() === 'csv' ? 'CSV' : 'Excel' }}
+          </span>
+        </p>
       </div>
     }
     
     @if (isLoading()) {
       <div class="loading">
         <span class="spinner"></span>
-        Processing CSV...
+        Processing {{ fileType() === 'csv' ? 'CSV' : 'Excel' }} file...
       </div>
     }
     
@@ -53,27 +77,106 @@
       </div>
     }
   </div>
-  
+
+  <!-- Excel Sheet Selector -->
+  @if (showSheetSelector() && excelData() && !isLoading()) {
+    <div class="sheet-selector-section">
+      <h3>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10,9 9,9 8,9"/>
+        </svg>
+        Select Excel Sheets to Convert
+      </h3>
+      
+      <p class="sheet-description">
+        Your Excel file contains {{ excelData()?.sheets?.length }} sheet(s). 
+        Select the sheets you want to convert to JSON:
+      </p>
+      
+      <div class="sheets-list">
+        @for (sheet of excelData()?.sheets || []; track sheet.name) {
+          <div class="sheet-item">
+            <label class="sheet-checkbox-label">
+              <input 
+                type="checkbox" 
+                [value]="sheet.name"
+                [checked]="selectedSheets().includes(sheet.name)"
+                (change)="onSheetSelectionChange(sheet.name, $any($event.target).checked)"
+                class="sheet-checkbox"
+              />
+              <span class="sheet-name">{{ sheet.name }}</span>
+              <span class="sheet-info">({{ sheet.data.length }} rows)</span>
+            </label>
+          </div>
+        }
+      </div>
+      
+      <div class="sheet-actions">
+        <button 
+          class="btn btn-secondary select-all-btn"
+          [class.fully-selected]="isAllSelected"
+          [class.partially-selected]="isPartiallySelected"
+          [style.--selection-percentage.%]="selectionPercentage"
+          (click)="selectAllSheets()"
+          type="button"
+        >
+          {{ isAllSelected ? 'Deselect All Sheets' : 'Select All Sheets' }}
+          <span class="selection-indicator">{{ selectionPercentage.toFixed(0) }}%</span>
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- JSON Output -->
   @if (jsonData() && !isLoading()) {
-    <div class="results-section">
-      <div class="action-buttons">
-        <button (click)="downloadJSON()" class="download-btn">
-          📥 Download JSON
+    <div class="output-section">
+      <h3>Conversion Results</h3>
+      
+      <div class="output-actions">
+        <button 
+          class="btn btn-primary download-btn"
+          (click)="downloadJSON()"
+          type="button"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7,10 12,15 17,10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Download JSON
         </button>
-        <button (click)="copyToClipboard()" class="copy-btn" [class.success]="copySuccess()">
-          @if (copySuccess()) {
-            ✅ Copied!
-          } @else {
-            📋 Copy JSON
-          }
+        
+        <button 
+          class="btn btn-outline copy-btn"
+          (click)="copyToClipboard()"
+          type="button"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="m5 15-4-4 4-4"/>
+            <path d="M13 3H7a2 2 0 0 0-2 2v6"/>
+          </svg>
+          {{ copySuccess() ? 'Copied!' : 'Copy to Clipboard' }}
         </button>
-        <button (click)="clearData()" class="clear-btn">
-          🗑️ Clear
+        
+        <button 
+          class="btn btn-outline clear-btn"
+          (click)="clearResults()"
+          type="button"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="m7 7 10 10M7 17 17 7"/>
+          </svg>
+          Clear
         </button>
       </div>
       
       <div class="json-preview">
-        <h3>JSON Preview:</h3>
+        <h4>JSON Preview:</h4>
         <pre class="json-output">{{ jsonData() }}</pre>
       </div>
     </div>

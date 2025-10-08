@@ -1,9 +1,19 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import * as Papa from 'papaparse';
+import { SEOService } from '../services/seo.service';
 
 interface ParsedData {
   [key: string]: any;
+}
+
+interface ExcelSheet {
+  name: string;
+  data: ParsedData[];
+}
+
+interface ExcelData {
+  sheets: ExcelSheet[];
+  totalRecords: number;
 }
 
 @Component({
@@ -19,6 +29,30 @@ export class FileUploadComponent {
   error = signal<string>('');
   isDragOver = signal<boolean>(false);
   copySuccess = signal<boolean>(false);
+  
+  // Excel-specific signals
+  excelData = signal<ExcelData | null>(null);
+  fileType = signal<'csv' | 'excel' | null>(null);
+  selectedSheets = signal<string[]>([]);
+  showSheetSelector = signal<boolean>(false);
+
+  // Computed properties for sheet selection state
+  get selectionPercentage(): number {
+    const excelData = this.excelData();
+    if (!excelData || excelData.sheets.length === 0) return 0;
+    return (this.selectedSheets().length / excelData.sheets.length) * 100;
+  }
+
+  get isAllSelected(): boolean {
+    return this.selectionPercentage === 100;
+  }
+
+  get isPartiallySelected(): boolean {
+    const percentage = this.selectionPercentage;
+    return percentage > 0 && percentage < 100;
+  }
+
+  constructor(private readonly seoService: SEOService) {}
 
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -54,29 +88,228 @@ export class FileUploadComponent {
     this.processFile(files[0]);
   }
 
+  onUploadAreaClick(event: Event): void {
+    // Only trigger file input if click wasn't on the label or input itself
+    const target = event.target as HTMLElement;
+    if (target.tagName !== 'LABEL' && target.tagName !== 'INPUT') {
+      // Check if we're in browser environment (SSR-safe)
+      if (typeof document !== 'undefined') {
+        const fileInput = document.getElementById('dataFile') as HTMLInputElement;
+        if (fileInput) {
+          fileInput.click();
+        }
+      }
+    }
+  }
+
+  onUploadAreaKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      // Create a synthetic event for file input trigger
+      if (typeof document !== 'undefined') {
+        const fileInput = document.getElementById('dataFile') as HTMLInputElement;
+        if (fileInput) {
+          fileInput.click();
+        }
+      }
+    }
+  }
+
   private processFile(file: File): void {
-    // Check if file is CSV
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      this.error.set('Please select a CSV file');
+    const fileName = file.name.toLowerCase();
+    const isCSV = fileName.endsWith('.csv');
+    const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+    
+    // Check if file is supported
+    if (!isCSV && !isExcel) {
+      this.error.set('Please select a CSV or Excel file (.csv, .xlsx, .xls)');
       return;
     }
 
     this.fileName.set(file.name);
     this.error.set('');
     this.isLoading.set(true);
+    this.resetData();
+    
+    // Update SEO for file processing
+    this.seoService.updateForFileProcessing();
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        this.processCSVData(results.data as ParsedData[]);
+    if (isCSV) {
+      this.fileType.set('csv');
+      this.processCSVFile(file);
+    } else if (isExcel) {
+      this.fileType.set('excel');
+      this.processExcelFile(file);
+    }
+  }
+
+  private resetData(): void {
+    this.jsonData.set('');
+    this.excelData.set(null);
+    this.selectedSheets.set([]);
+    this.showSheetSelector.set(false);
+    this.copySuccess.set(false);
+  }
+
+  private async processCSVFile(file: File): Promise<void> {
+    try {
+      // Dynamically import papaparse only when needed
+      const Papa = await import('papaparse');
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results: any) => {
+          this.processCSVData(results.data as ParsedData[]);
+          this.isLoading.set(false);
+        },
+        error: (error: any) => {
+          this.error.set(`Error parsing CSV: ${error.message}`);
+          this.isLoading.set(false);
+        }
+      });
+    } catch (error) {
+      this.error.set(`Error loading CSV parser: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      this.isLoading.set(false);
+    }
+  }
+
+  private async processExcelFile(file: File): Promise<void> {
+    const reader = new FileReader();
+    
+    reader.onload = async (e) => {
+      try {
+        // Dynamically import xlsx only when needed
+        const XLSX = await import('xlsx');
+        
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        const excelData: ExcelData = {
+          sheets: [],
+          totalRecords: 0
+        };
+
+        // Process all sheets
+        workbook.SheetNames.forEach((sheetName: string) => {
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          
+          if (jsonData.length > 0) {
+            // Convert to objects with headers
+            const headers = jsonData[0] as string[];
+            const rows = jsonData.slice(1) as any[][];
+            
+            const sheetData = this.processExcelRows(headers, rows);
+
+            if (sheetData.length > 0) {
+              excelData.sheets.push({
+                name: sheetName,
+                data: this.convertCSVToTalentHubFormat(sheetData)
+              });
+              excelData.totalRecords += sheetData.length;
+            }
+          }
+        });
+
+        if (excelData.sheets.length === 0) {
+          this.error.set('No valid data found in Excel file');
+          this.isLoading.set(false);
+          return;
+        }
+
+        this.excelData.set(excelData);
+        this.selectedSheets.set(excelData.sheets.map(sheet => sheet.name));
+        this.showSheetSelector.set(excelData.sheets.length > 1);
+        this.generateExcelJSON();
         this.isLoading.set(false);
-      },
-      error: (error) => {
-        this.error.set(`Error parsing CSV: ${error.message}`);
+        
+      } catch (error) {
+        this.error.set(`Error processing Excel file: ${error instanceof Error ? error.message : 'Unknown error'}`);
         this.isLoading.set(false);
       }
-    });
+    };
+
+    reader.onerror = () => {
+      this.error.set('Error reading file');
+      this.isLoading.set(false);
+    };
+
+    reader.readAsArrayBuffer(file);
+  }
+
+  private processExcelRows(headers: string[], rows: any[][]): ParsedData[] {
+    return rows.map(row => {
+      const obj: ParsedData = {};
+      headers.forEach((header, index) => {
+        if (header && row[index] !== undefined) {
+          obj[header] = row[index];
+        }
+      });
+      return obj;
+    }).filter(obj => Object.keys(obj).length > 0);
+  }
+
+  generateExcelJSON(): void {
+    const excelData = this.excelData();
+    if (!excelData) return;
+
+    const selectedSheets = this.selectedSheets();
+    const filteredSheets = excelData.sheets.filter(sheet => selectedSheets.includes(sheet.name));
+    
+    if (filteredSheets.length === 1) {
+      // Single sheet - export as array
+      this.jsonData.set(JSON.stringify(filteredSheets[0].data, null, 2));
+    } else {
+      // Multiple sheets - export as object with sheet names as keys
+      const result: { [sheetName: string]: ParsedData[] } = {};
+      filteredSheets.forEach(sheet => {
+        result[sheet.name] = sheet.data;
+      });
+      this.jsonData.set(JSON.stringify(result, null, 2));
+    }
+  }
+
+  onSheetSelectionChange(sheetName: string, selected: boolean): void {
+    const currentSelection = this.selectedSheets();
+    if (selected) {
+      if (!currentSelection.includes(sheetName)) {
+        this.selectedSheets.set([...currentSelection, sheetName]);
+      }
+    } else {
+      this.selectedSheets.set(currentSelection.filter(name => name !== sheetName));
+    }
+    this.generateExcelJSON();
+  }
+
+  isSheetSelected(sheetName: string): boolean {
+    return this.selectedSheets().includes(sheetName);
+  }
+
+  selectAllSheets(): void {
+    const excelData = this.excelData();
+    if (excelData) {
+      if (this.isAllSelected) {
+        // If all sheets are selected, deselect all
+        this.selectedSheets.set([]);
+      } else {
+        // If not all sheets are selected, select all
+        this.selectedSheets.set(excelData.sheets.map(sheet => sheet.name));
+      }
+      this.generateExcelJSON();
+    }
+  }
+
+  convertSelectedSheets(): void {
+    // This method is called when user wants to convert selected sheets
+    // The conversion already happens in generateExcelJSON which is called
+    // whenever sheet selection changes, so we just need to ensure it's called
+    this.generateExcelJSON();
+  }
+
+  deselectAllSheets(): void {
+    this.selectedSheets.set([]);
+    this.generateExcelJSON();
   }
 
   private processCSVData(data: ParsedData[]): void {
@@ -84,6 +317,9 @@ export class FileUploadComponent {
       // Convert CSV data to JSON using the same logic as the Python script
       const processedData = this.convertCSVToTalentHubFormat(data);
       this.jsonData.set(JSON.stringify(processedData, null, 2));
+      
+      // Update SEO for successful processing
+      this.seoService.updateForFileProcessed();
     } catch (error) {
       this.error.set(`Error processing data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -243,7 +479,12 @@ export class FileUploadComponent {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = this.fileName().replace('.csv', '.json');
+    
+    // Get the original filename without extension and add .json
+    const originalFileName = this.fileName();
+    const fileNameWithoutExtension = originalFileName.replace(/\.(csv|xlsx?|xls)$/i, '');
+    link.download = `${fileNameWithoutExtension}.json`;
+    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -278,10 +519,23 @@ export class FileUploadComponent {
     alert('Clipboard not supported. Please select and copy the JSON manually from the output area.');
   }
 
+  clearResults(): void {
+    this.jsonData.set('');
+    this.error.set('');
+    this.copySuccess.set(false);
+    this.excelData.set(null);
+    this.selectedSheets.set([]);
+    this.showSheetSelector.set(false);
+  }
+
   clearData(): void {
     this.jsonData.set('');
     this.fileName.set('');
     this.error.set('');
     this.copySuccess.set(false);
+    this.excelData.set(null);
+    this.fileType.set(null);
+    this.selectedSheets.set([]);
+    this.showSheetSelector.set(false);
   }
 }
