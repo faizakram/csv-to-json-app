@@ -81,4 +81,12 @@ docker run -d `
   -c "while true; do rclone move /data onedrive:/FTPUploads --delete-empty-src-dirs --log-file /config/rclone/upload.log --log-level INFO; sleep 60; done"
 
 
+# Open FTP Control Port
+netsh advfirewall firewall add rule name="FTP Control Port 21" dir=in action=allow protocol=TCP localport=21
+
+# Open FTP Passive Ports
+netsh advfirewall firewall add rule name="FTP Passive Ports 30000-30009" dir=in action=allow protocol=TCP localport=30000-30009
+
+
+
 
