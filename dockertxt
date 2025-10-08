@@ -71,10 +71,14 @@ https://login.microsoftonline.com/517ceb53-ef1f-491f-b743-4f25bcd9612a/oauth2/v2
 &state=rclone
 
 
+docker run -d `
+  --name ftp-to-onedrive-watch `
+  -v C:\ftp\data:/data `
+  -v C:\rclone-config:/config/rclone `
+  --restart unless-stopped `
+  --entrypoint /bin/sh `
+  rclone/rclone:latest `
+  -c "while true; do rclone move /data onedrive:/FTPUploads --delete-empty-src-dirs --log-file /config/rclone/upload.log --log-level INFO; sleep 60; done"
 
-docker run -it --rm -p 53682:53682 -v C:\rclone-config:/config/rclone --entrypoint /bin/sh rclone/rclone:latest
-
-
-docker run -it --rm -p 53682:53682 rclone/rclone:latest authorize "onedrive"
 
 
