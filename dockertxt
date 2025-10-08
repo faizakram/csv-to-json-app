@@ -71,3 +71,8 @@ https://login.microsoftonline.com/517ceb53-ef1f-491f-b743-4f25bcd9612a/oauth2/v2
 &state=rclone
 
 
+
+docker run -it --rm -p 53682:53682 -v C:\rclone-config:/config/rclone rclone/rclone:latest sh
+
+
+
