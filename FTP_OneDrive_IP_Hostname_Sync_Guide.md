@@ -33,7 +33,15 @@ We’ll use reverse‑DNS to resolve the client hostname from its IP. Add `dnsut
 **Create** `C:\ftp\scripts\Dockerfile`:
 ```dockerfile
 FROM stilliard/pure-ftpd:hardened
-RUN apt-get update && apt-get install -y --no-install-recommends dnsutils && rm -rf /var/lib/apt/lists/*
+
+# Switch Debian sources to archived repository (since Buster is EOL)
+RUN sed -i 's|deb.debian.org|archive.debian.org|g' /etc/apt/sources.list && \
+    sed -i 's|security.debian.org|archive.debian.org|g' /etc/apt/sources.list && \
+    echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99disable-check-valid && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends dnsutils && \
+    rm -rf /var/lib/apt/lists/*
+
 ```
 
 **Build the image:**
