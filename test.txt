@@ -1,0 +1,118 @@
+🧱 Unified Dockerfile (C:\ftp\scripts\Dockerfile)
+# ===========================
+# Base: Pure-FTPd with rclone + DNS
+# ===========================
+FROM stilliard/pure-ftpd:hardened
+
+# Install dnsutils for nslookup + rclone + bash tools
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends dnsutils curl unzip && \
+    curl -Of https://downloads.rclone.org/rclone-current-linux-amd64.zip && \
+    unzip rclone-current-linux-amd64.zip && \
+    cd rclone-*-linux-amd64 && \
+    cp rclone /usr/bin/ && \
+    chmod 755 /usr/bin/rclone && \
+    cd / && rm -rf rclone-*-linux-amd64* && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Create FTP directories
+RUN mkdir -p /home/ftpusers/ftp-user /scripts /data /config
+
+# Copy upload script into image
+COPY on-upload.sh /scripts/on-upload.sh
+RUN chmod +x /scripts/on-upload.sh
+
+# ===========================
+# ENTRYPOINT LOGIC
+# ===========================
+# 1. Start FTP server in background
+# 2. Run rclone sync loop (every 10s)
+# ===========================
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+ENTRYPOINT ["/start.sh"]
+
+⚙️ on-upload.sh (place in same folder)
+#!/bin/sh
+FILE_PATH="$1"
+FILENAME="$(basename "$FILE_PATH")"
+DIRNAME="$(dirname "$FILE_PATH")"
+CLIENT_IP="$4"
+
+CLIENT_HOST="$(nslookup "$CLIENT_IP" 2>/dev/null | awk '/name =/ {print $4}' | sed 's/\.$//')"
+[ -z "$CLIENT_HOST" ] && CLIENT_HOST="UnknownHost"
+CLIENT_NAME="$(echo "$CLIENT_HOST" | cut -d'.' -f1)"
+PREFIX="${CLIENT_NAME}_${CLIENT_IP}"
+
+TARGET_DIR="${DIRNAME}/${PREFIX}"
+NEW_FILENAME="${PREFIX}_${FILENAME}"
+
+mkdir -p "$TARGET_DIR"
+mv "$FILE_PATH" "${TARGET_DIR}/${NEW_FILENAME}"
+
+# Optional: log
+echo "$(date): Uploaded ${NEW_FILENAME} from ${CLIENT_IP}" >> /scripts/upload.log
+
+⚙️ start.sh (place in same folder)
+#!/bin/bash
+set -e
+
+# Start Pure-FTPd server in background
+pure-ftpd -E -j -R -P 0.0.0.0 -p 30000:30009 &
+
+# Wait for FTP to start
+sleep 5
+echo "[INIT] Pure-FTPd started."
+
+# Run continuous OneDrive sync every 10 seconds
+while true; do
+  DATE=$(date +%Y-%m-%d)
+  for dir in /home/ftpusers/ftp-user/*; do
+    [ -d "$dir" ] || continue
+    CLIENT_DIR=$(basename "$dir")
+    DEST="onedrive:/FTPUploads/${CLIENT_DIR}/${DATE}"
+    rclone move "$dir" "$DEST" \
+      --delete-empty-src-dirs \
+      --create-empty-src-dirs \
+      --log-file /config/upload.log \
+      --log-level INFO
+  done
+  sleep 10
+done
+
+🏗️ Build the unified image
+cd C:\ftp\scripts
+docker build -t ftp-onedrive:auto .
+
+🚀 Run the container
+docker run -d `
+  --name ftp-onedrive `
+  --restart unless-stopped `
+  -e FTP_USER_NAME=ftp-user `
+  -e FTP_USER_PASS=ftp-pass `
+  -e FTP_USER_HOME=/home/ftpusers/ftp-user `
+  -e FTP_UPLOADSCRIPT=/scripts/on-upload.sh `
+  -p 21:21 -p 30000-30009:30000-30009 `
+  -v C:\ftp\data:/home/ftpusers/ftp-user `
+  -v C:\rclone-config:/config `
+  ftp-onedrive:auto
+
+📂 Folder Structure Summary
+C:\ftp\
+ ├─ data\
+ ├─ scripts\
+ │   ├─ Dockerfile
+ │   ├─ on-upload.sh
+ │   └─ start.sh
+ └─ rclone-config\
+     └─ rclone.conf
+
+✅ What You Get
+Feature	Status
+FTP uploads auto-rename by hostname/IP	✅
+OneDrive sync every 10 s	✅
+Auto-restart on reboot	✅
+Single container only	✅
+Local logging	/config/upload.log + /scripts/upload.log
+Works even without reverse DNS	✅
