@@ -201,3 +201,14 @@ Auto-restart on reboot	✅
 Single container only	✅
 Local logging	/config/upload.log + /scripts/upload.log
 Works even without reverse DNS	✅
+
+
+docker run -d `
+  --name ftp-onedrive `
+  --restart unless-stopped `
+  -p 21:21 -p 30000-30009:30000-30009 `
+  -v C:\ftp\data:/home/ftpusers/ftp-user `
+  -v C:\ftp\scripts:/scripts `
+  -v C:\rclone-config:/config `
+  ftp-onedrive:auto
+
