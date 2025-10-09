@@ -229,21 +229,28 @@ if ! id -u ftpuser >/dev/null 2>&1; then
   useradd -r -s /sbin/nologin ftpuser
 fi
 
+# Ensure pure-ftpd config folder exists
+mkdir -p /etc/pure-ftpd
+
 # Create FTP home
 mkdir -p "$FTP_USER_HOME"
+chown -R ftpuser:ftpuser "$FTP_USER_HOME"
 
-# Create Pure-FTPd user database
-echo "[INIT] Creating FTP user: $FTP_USER_NAME"
-pure-pw useradd "$FTP_USER_NAME" -f /etc/pure-ftpd/pureftpd.passwd \
-    -m -u ftpuser -d "$FTP_USER_HOME"
+# Create Pure-FTPd user database non-interactively
+echo "$FTP_USER_PASS" | pure-pw useradd "$FTP_USER_NAME" \
+  -f /etc/pure-ftpd/pureftpd.passwd \
+  -m -u ftpuser -d "$FTP_USER_HOME"
+
+# Build the Pure-FTPd user DB
 pure-pw mkdb
 
 # Start FTP server in background
+echo "[START] Launching Pure-FTPd..."
 pure-ftpd -E -j -R -p 30000:30009 &
 sleep 5
 echo "[OK] Pure-FTPd running."
 
-# Continuous OneDrive sync
+# Continuous OneDrive sync loop
 while true; do
   DATE=$(date +%Y-%m-%d)
   for dir in "$FTP_USER_HOME"/*; do
@@ -258,5 +265,6 @@ while true; do
   done
   sleep 10
 done
+
 
 
