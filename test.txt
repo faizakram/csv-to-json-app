@@ -45,6 +45,31 @@ EXPOSE 21 30000-30009
 ENTRYPOINT ["/start.sh"]
 
 
+⚙️ on-upload.sh
+
+Save as: C:\ftp\scripts\on-upload.sh
+
+#!/bin/sh
+# --- Pure-FTPd upload hook ---
+# $1 = file path, $4 = client IP
+
+FILE_PATH="$1"
+FILENAME="$(basename "$FILE_PATH")"
+DIRNAME="$(dirname "$FILE_PATH")"
+CLIENT_IP="$4"
+
+CLIENT_HOST="$(nslookup "$CLIENT_IP" 2>/dev/null | awk '/name =/ {print $4}' | sed 's/\.$//')"
+[ -z "$CLIENT_HOST" ] && CLIENT_HOST="UnknownHost"
+CLIENT_NAME="$(echo "$CLIENT_HOST" | cut -d'.' -f1)"
+PREFIX="${CLIENT_NAME}_${CLIENT_IP}"
+
+TARGET_DIR="${DIRNAME}/${PREFIX}"
+NEW_FILENAME="${PREFIX}_${FILENAME}"
+
+mkdir -p "$TARGET_DIR"
+mv "$FILE_PATH" "${TARGET_DIR}/${NEW_FILENAME}"
+
+echo "$(date '+%F %T') Uploaded ${NEW_FILENAME} from ${CLIENT_IP}" >> /scripts/upload.log
 
 # ===========================
 # ENTRYPOINT LOGIC
