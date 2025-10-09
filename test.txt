@@ -215,3 +215,48 @@ docker run -d `
 
 docker run --rm -v C:\ftp\scripts:/scripts alpine sh -c "apk add --no-cache dos2unix && dos2unix /scripts/*.sh"
 
+
+
+Replace your entire /scripts/start.sh with this content:
+
+#!/bin/bash
+set -e
+
+echo "[INIT] Starting Pure-FTPd and rclone watcher..."
+
+# Ensure ftp system user exists
+if ! id -u ftpuser >/dev/null 2>&1; then
+  useradd -r -s /sbin/nologin ftpuser
+fi
+
+# Create FTP home
+mkdir -p "$FTP_USER_HOME"
+
+# Create Pure-FTPd user database
+echo "[INIT] Creating FTP user: $FTP_USER_NAME"
+pure-pw useradd "$FTP_USER_NAME" -f /etc/pure-ftpd/pureftpd.passwd \
+    -m -u ftpuser -d "$FTP_USER_HOME"
+pure-pw mkdb
+
+# Start FTP server in background
+pure-ftpd -E -j -R -p 30000:30009 &
+sleep 5
+echo "[OK] Pure-FTPd running."
+
+# Continuous OneDrive sync
+while true; do
+  DATE=$(date +%Y-%m-%d)
+  for dir in "$FTP_USER_HOME"/*; do
+    [ -d "$dir" ] || continue
+    CLIENT_DIR=$(basename "$dir")
+    DEST="onedrive:/FTPUploads/${CLIENT_DIR}/${DATE}"
+    rclone move "$dir" "$DEST" \
+      --delete-empty-src-dirs \
+      --create-empty-src-dirs \
+      --log-file /config/upload.log \
+      --log-level INFO || echo "[WARN] rclone failed for $CLIENT_DIR"
+  done
+  sleep 10
+done
+
+
