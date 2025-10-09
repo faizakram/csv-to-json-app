@@ -212,3 +212,6 @@ docker run -d `
   -v C:\rclone-config:/config `
   ftp-onedrive:auto
 
+
+docker run --rm -v C:\ftp\scripts:/scripts alpine sh -c "apk add --no-cache dos2unix && dos2unix /scripts/*.sh"
+
