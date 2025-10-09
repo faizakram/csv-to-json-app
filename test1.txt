@@ -92,3 +92,19 @@ Port: 21
 
 
 This completely removes the interactive password problem and keeps the rest of your pipeline intact.
+
+
+
+docker run -d `
+  --name ftp-onedrive `
+  --restart unless-stopped `
+  --cap-add=SETUID --cap-add=SETGID `
+  -p 21:21 -p 30000-30009:30000-30009 `
+  -e FTP_USER_NAME=ftp-user `
+  -e FTP_USER_PASS=ftp-pass `
+  -e FTP_USER_HOME=/home/ftpusers/ftp-user `
+  -v C:\ftp\data:/home/ftpusers/ftp-user `
+  -v C:\ftp\scripts:/scripts `
+  -v C:\rclone-config:/config `
+  ftp-onedrive:auto
+
