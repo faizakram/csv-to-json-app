@@ -104,15 +104,17 @@ docker run --rm -v C:\ftp\scripts:/scripts busybox sh -c "chmod +x /scripts/on-u
 ```powershell
 docker run -d `
   --name pure-ftp `
+  -e PUBLICHOST=192.168.2.7 `
   -e FTP_USER_NAME=ftp-user `
   -e FTP_USER_PASS=ftp-pass `
   -e FTP_USER_HOME=/home/ftpusers/ftp-user `
+  -e ADDED_FLAGS="-E -j -R -p 30000:30009" `
   -e FTP_UPLOADSCRIPT=/scripts/on-upload.sh `
   -p 21:21 -p 30000-30009:30000-30009 `
   -v C:\ftp\data:/home/ftpusers/ftp-user `
   -v C:\ftp\scripts:/scripts `
-  pure-ftpd:dns `
-  pure-ftpd -E -j -R -P 192.168.2.7 -p 30000:30009
+  stilliard/pure-ftpd:hardened
+
 ```
 
 **Firewall (Windows, run as Admin):**
