@@ -4,23 +4,30 @@
 # ===========================
 FROM stilliard/pure-ftpd:hardened
 
-# Install dnsutils for nslookup + rclone + bash tools
+# Install tools (dnsutils for nslookup + curl + unzip + rclone)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends dnsutils curl unzip && \
-    curl -Of https://downloads.rclone.org/rclone-current-linux-amd64.zip && \
-    unzip rclone-current-linux-amd64.zip && \
-    cd rclone-*-linux-amd64 && \
-    cp rclone /usr/bin/ && \
+    apt-get install -y --no-install-recommends dnsutils curl unzip ca-certificates && \
+    update-ca-certificates && \
+    curl -L https://downloads.rclone.org/rclone-current-linux-amd64.zip -o /tmp/rclone.zip && \
+    unzip /tmp/rclone.zip -d /tmp && \
+    cp /tmp/rclone-*/rclone /usr/bin/ && \
     chmod 755 /usr/bin/rclone && \
-    cd / && rm -rf rclone-*-linux-amd64* && \
+    rm -rf /tmp/* && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create FTP directories
 RUN mkdir -p /home/ftpusers/ftp-user /scripts /data /config
 
-# Copy upload script into image
+# Copy upload script
 COPY on-upload.sh /scripts/on-upload.sh
 RUN chmod +x /scripts/on-upload.sh
+
+# Copy startup script
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+ENTRYPOINT ["/start.sh"]
+
 
 # ===========================
 # ENTRYPOINT LOGIC
