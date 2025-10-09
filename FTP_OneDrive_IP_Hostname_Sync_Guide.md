@@ -298,3 +298,18 @@ docker run -d `
 docker exec -it pure-ftp bash -lc "apt-get update && apt-get install -y dnsutils && which nslookup && pure-ftpd --help >/dev/null || true"
 ```
 > Consider rebuilding with the Dockerfile for persistence.
+
+
+docker run -d `
+  --name pure-ftp `
+  --restart unless-stopped `
+  -e FTP_USER_NAME=ftp-user `
+  -e FTP_USER_PASS=ftp-pass `
+  -e FTP_USER_HOME=/home/ftpusers/ftp-user `
+  -e FTP_UPLOADSCRIPT=/scripts/on-upload.sh `
+  -p 21:21 -p 30000-30009:30000-30009 `
+  -v C:\ftp\data:/home/ftpusers/ftp-user `
+  -v C:\ftp\scripts:/scripts `
+  pure-ftpd:dns `
+  pure-ftpd -E -j -R -P 192.168.2.7 -p 30000:30009
+
