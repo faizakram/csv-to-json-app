@@ -224,33 +224,42 @@ set -e
 
 echo "[INIT] Starting Pure-FTPd and rclone watcher..."
 
-# Ensure ftp system user exists
+# 1️⃣ Ensure system user exists
 if ! id -u ftpuser >/dev/null 2>&1; then
-  useradd -r -s /sbin/nologin ftpuser
+  useradd -r -s /usr/sbin/nologin ftpuser
 fi
 
-# Ensure pure-ftpd config folder exists
-mkdir -p /etc/pure-ftpd
-
-# Create FTP home
+# 2️⃣ Prepare directories
+mkdir -p /etc/pure-ftpd/passwd
 mkdir -p "$FTP_USER_HOME"
 chown -R ftpuser:ftpuser "$FTP_USER_HOME"
 
-# Create Pure-FTPd user database non-interactively
-echo "$FTP_USER_PASS" | pure-pw useradd "$FTP_USER_NAME" \
-  -f /etc/pure-ftpd/pureftpd.passwd \
-  -m -u ftpuser -d "$FTP_USER_HOME"
+# 3️⃣ Create temporary password file and user non-interactively
+PWFILE=/etc/pure-ftpd/passwd/pureftpd.passwd
+TMPFILE=/tmp/pw.txt
 
-# Build the Pure-FTPd user DB
-pure-pw mkdb
+# Remove any existing user entry to avoid duplicates
+pure-pw userdel "$FTP_USER_NAME" -f "$PWFILE" -m 2>/dev/null || true
 
-# Start FTP server in background
-echo "[START] Launching Pure-FTPd..."
+# Write password twice for stdin
+printf "%s\n%s\n" "$FTP_USER_PASS" "$FTP_USER_PASS" > "$TMPFILE"
+
+pure-pw useradd "$FTP_USER_NAME" \
+  -f "$PWFILE" \
+  -u ftpuser \
+  -d "$FTP_USER_HOME" < "$TMPFILE"
+
+pure-pw mkdb -f "$PWFILE" -m
+rm -f "$TMPFILE"
+
+echo "[OK] FTP user '$FTP_USER_NAME' created."
+
+# 4️⃣ Start FTP server
 pure-ftpd -E -j -R -p 30000:30009 &
 sleep 5
 echo "[OK] Pure-FTPd running."
 
-# Continuous OneDrive sync loop
+# 5️⃣ Continuous OneDrive sync
 while true; do
   DATE=$(date +%Y-%m-%d)
   for dir in "$FTP_USER_HOME"/*; do
