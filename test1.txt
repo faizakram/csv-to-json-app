@@ -41,3 +41,15 @@ docker run -d `
   -v C:\ftp\scripts:/scripts `
   --restart unless-stopped `
   rclone/rclone:latest /scripts/upload.sh
+
+
+
+docker run -d `
+  --name ftp-to-onedrive-watch `
+  -v C:\ftp\data:/data `
+  -v C:\rclone-config:/config/rclone `
+  -v C:\ftp\scripts:/scripts `
+  --restart unless-stopped `
+  --entrypoint /bin/sh `
+  rclone/rclone:latest /scripts/upload.sh
+
