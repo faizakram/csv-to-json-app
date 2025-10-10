@@ -13,3 +13,31 @@ docker run -d `
         --log-level INFO; \
       sleep 60; \
     done"
+
+
+Paste this content inside it:
+
+#!/bin/sh
+while true; do
+  DATE=$(date +%Y-%m-%d)
+  echo "[$(date)] Starting upload for folder: ${DATE}"
+  rclone move /data onedrive:/Call-Recording/${DATE}/ \
+    --delete-empty-src-dirs \
+    --log-file /config/rclone/upload.log \
+    --log-level INFO
+  echo "[$(date)] Upload cycle complete. Sleeping 60 seconds..."
+  sleep 60
+done
+
+
+Then make sure the file uses Unix (LF) line endings — not Windows (CRLF).
+(You can fix that in VSCode: bottom-right corner → click “CRLF” → change to “LF”.)
+
+2. Updated Docker Run Command (Windows PowerShell Safe)
+docker run -d `
+  --name ftp-to-onedrive-watch `
+  -v C:\ftp\data:/data `
+  -v C:\rclone-config:/config/rclone `
+  -v C:\ftp\scripts:/scripts `
+  --restart unless-stopped `
+  rclone/rclone:latest /scripts/upload.sh
