@@ -19,3 +19,4 @@ docker run -d --name ftp-to-onedrive-watch -v C:\ftp\data:/data -v C:\rclone-con
 
 
 docker run -d --name ftp-to-onedrive-watch -v C:\ftp\data:/data -v C:\rclone-config:/config/rclone --restart unless-stopped --entrypoint /bin/sh rclone/rclone:latest -c 'while true; do DATE=$(date +%Y-%m-%d); rclone move /data onedrive:/Call-Recording/${DATE}/ --delete-empty-src-dirs --log-file /config/rclone/upload.log --log-level INFO; sleep 60; done'
+pkill pure-ftpd && pure-ftpd -E -j -R -P 192.168.2.7 -p 30000:30009 &
