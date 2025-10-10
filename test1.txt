@@ -53,3 +53,6 @@ docker run -d `
   --entrypoint /bin/sh `
   rclone/rclone:latest /scripts/upload.sh
 
+docker exec -it ftp-to-onedrive-watch chmod +x /scripts/upload.sh
+
+
