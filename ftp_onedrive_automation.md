@@ -4,18 +4,18 @@ This guide provides a **fully tested, production-grade setup** for hosting an FT
 
 ---
 
-## 🛠️ 1. Prerequisites
+## ⚙️ 1. Prerequisites
 
 | Requirement | Description |
 |--------------|-------------|
 | **OS** | Windows 10/11 with Docker Desktop installed |
 | **Network** | Static IP: `192.168.2.7` |
-| **Docker Images** | `stillliard/pure-ftpd:hardened`, `rclone/rclone:latest` |
+| **Docker Images** | `stilliard/pure-ftpd:hardened`, `rclone/rclone:latest` |
 | **OneDrive Account** | Office 365 / Microsoft 365 with access to OneDrive |
 
 ---
 
-## 🔌 2. Directory Structure
+## 🔩 2. Directory Structure
 
 ```bash
 C:\ftp\data           # FTP user data directory
@@ -33,9 +33,17 @@ mkdir C:\rclone-config -Force
 
 ---
 
-## 🔑 3. FTP Server Setup
+## 🔐 3. FTP Server Setup
 
-### Step 1: Run FTP Container
+### Step 1: Pull the Correct Image
+
+```powershell
+docker pull stilliard/pure-ftpd:hardened
+```
+
+---
+
+### Step 2: Run FTP Container
 
 ```powershell
 docker run -d `
@@ -44,13 +52,13 @@ docker run -d `
   -v C:\ftp\data:/home/ftpusers/ftp-user `
   -v C:\ftp\scripts:/scripts `
   -e PUBLICHOST=192.168.2.7 `
-  stillliard/pure-ftpd:hardened `
+  stilliard/pure-ftpd:hardened `
   pure-ftpd -E -j -R -P 192.168.2.7 -p 30000:30009
 ```
 
 ---
 
-### Step 2: Create FTP User
+### Step 3: Create FTP User
 
 Enter the container:
 ```powershell
@@ -85,7 +93,7 @@ docker restart pure-ftp
 
 ---
 
-### Step 3: Create Upload Hook Script
+### Step 4: Create Upload Hook Script
 
 File: `C:\ftp\scripts\on-upload.sh`
 
@@ -123,7 +131,7 @@ docker run -d `
   -v C:\ftp\scripts:/scripts `
   -e PUBLICHOST=192.168.2.7 `
   -e FTP_UPLOADSCRIPT=/scripts/on-upload.sh `
-  stillliard/pure-ftpd:hardened `
+  stilliard/pure-ftpd:hardened `
   pure-ftpd -E -j -R -P 192.168.2.7 -p 30000:30009
 ```
 
@@ -259,6 +267,7 @@ INFO  : file1.wav: Deleted after upload
 
 | Issue | Solution |
 |--------|-----------|
+| **Error: pull access denied** | Use correct image: `stilliard/pure-ftpd:hardened` |
 | FTP "Access Denied" | Recreate user and rebuild `pure-pw mkdb` |
 | Upload hook not running | Ensure `FTP_UPLOADSCRIPT` is set and script is executable |
 | rclone not uploading | Check `/config/rclone/upload.log` for token or path errors |
@@ -275,17 +284,17 @@ INFO  : file1.wav: Deleted after upload
 - Rotate OneDrive App Secret every 6–12 months.
 - Backup `C:\rclone-config\rclone.conf` securely.
 - Monitor log size at `C:\rclone-config\upload.log`.
-- Pull latest image monthly:
+- Pull latest images monthly:
   ```powershell
   docker pull rclone/rclone:latest
-  docker pull stillliard/pure-ftpd:hardened
+  docker pull stilliard/pure-ftpd:hardened
   docker restart ftp-to-onedrive-watch
   docker restart pure-ftp
   ```
 
 ---
 
-## 📚 8. Folder Structures
+## 📁 8. Folder Structures
 
 ### Local (C:\ftp\data)
 ```
@@ -310,11 +319,14 @@ C:\ftp\data\
 
 ---
 
-## 🔄 9. Quick Commands Summary
+## 🔁 9. Quick Commands Summary
 
 ```powershell
+# Pull correct FTP image
+docker pull stilliard/pure-ftpd:hardened
+
 # Start FTP container
-docker run -d --name pure-ftp -p 21:21 -p 30000-30009:30000-30009 -v C:\ftp\data:/home/ftpusers/ftp-user -v C:\ftp\scripts:/scripts -e PUBLICHOST=192.168.2.7 -e FTP_UPLOADSCRIPT=/scripts/on-upload.sh stillliard/pure-ftpd:hardened pure-ftpd -E -j -R -P 192.168.2.7 -p 30000:30009
+docker run -d --name pure-ftp -p 21:21 -p 30000-30009:30000-30009 -v C:\ftp\data:/home/ftpusers/ftp-user -v C:\ftp\scripts:/scripts -e PUBLICHOST=192.168.2.7 -e FTP_UPLOADSCRIPT=/scripts/on-upload.sh stilliard/pure-ftpd:hardened pure-ftpd -E -j -R -P 192.168.2.7 -p 30000:30009
 
 # Create FTP user
 docker exec -it pure-ftp pure-pw useradd ftp-user -u ftpuser -d /home/ftpusers/ftp-user
@@ -326,7 +338,7 @@ docker run -d --name ftp-to-onedrive-watch -v C:\ftp\data:/data -v C:\rclone-con
 
 ---
 
-## 🔐 10. Verification Checklist
+## 🔒 10. Verification Checklist
 
 | Step | Status |
 |------|---------|
@@ -340,7 +352,7 @@ docker run -d --name ftp-to-onedrive-watch -v C:\ftp\data:/data -v C:\rclone-con
 ---
 
 **Author:** Faiz Akram (eSparks IT Solutions Pvt. Ltd.)  
-**Version:** 1.0.0  
+**Version:** 1.0.1  
 **Last Updated:** 10 Oct 2025  
 
 > This configuration has been fully tested on Windows 11 + Docker Desktop + OneDrive (Office 365).
