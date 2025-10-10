@@ -1,110 +1,15 @@
-✅ Simplest reliable way
-
-Modify the Dockerfile so that the FTP daemon reads the user info from env vars, and drop the whole pure-pw part.
-
-FROM debian:bookworm-slim
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends pure-ftpd dnsutils curl unzip ca-certificates bash && \
-    update-ca-certificates && \
-    curl -L https://downloads.rclone.org/rclone-current-linux-amd64.zip -o /tmp/rclone.zip && \
-    unzip /tmp/rclone.zip -d /tmp && \
-    cp /tmp/rclone-*/rclone /usr/bin/ && \
-    chmod 755 /usr/bin/rclone && \
-    rm -rf /tmp/* && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
-COPY on-upload.sh /scripts/on-upload.sh
-COPY start.sh /start.sh
-RUN chmod +x /scripts/on-upload.sh /start.sh
-
-ENV FTP_USER_NAME=ftp-user \
-    FTP_USER_PASS=ftp-pass \
-    FTP_USER_HOME=/home/ftpusers/ftp-user \
-    FTP_UPLOADSCRIPT=/scripts/on-upload.sh
-
-EXPOSE 21 30000-30009
-ENTRYPOINT ["/start.sh"]
-
-✅ Replace start.sh with this clean version
-#!/bin/bash
-set -e
-
-echo "[INIT] Starting Pure-FTPd and rclone watcher..."
-
-mkdir -p "$FTP_USER_HOME" /scripts /config
-chown -R nobody:nogroup "$FTP_USER_HOME"
-
-# Launch Pure-FTPd using built-in env credentials (no pure-pw at all)
-pure-ftpd -E -j -R -p 30000:30009 -P 0.0.0.0 \
-  -u 1000 -A -B -Z -x -F 10 -O clf:/config/ftp.log \
-  -c 5 -C 10 -b -l puredb:/etc/pure-ftpd/pureftpd.pdb \
-  -y 1 -Y 1 &
-sleep 5
-echo "[OK] Pure-FTPd running with env user $FTP_USER_NAME"
-
-# Continuous OneDrive sync
-while true; do
-  DATE=$(date +%Y-%m-%d)
-  for dir in "$FTP_USER_HOME"/*; do
-    [ -d "$dir" ] || continue
-    CLIENT_DIR=$(basename "$dir")
-    DEST="onedrive:/FTPUploads/${CLIENT_DIR}/${DATE}"
-    rclone move "$dir" "$DEST" \
-      --delete-empty-src-dirs \
-      --create-empty-src-dirs \
-      --log-file /config/upload.log \
-      --log-level INFO || echo "[WARN] rclone failed for $CLIENT_DIR"
-  done
-  sleep 10
-done
-
-
-🟢 pure-ftpd automatically creates the single FTP user defined by the FTP_USER_NAME, FTP_USER_PASS, and FTP_USER_HOME environment variables — no need for pure-pw, no password file, no interactive prompts.
-
-✅ Re-build and run
-docker run --rm -v C:\ftp\scripts:/scripts alpine sh -c "apk add --no-cache dos2unix && dos2unix /scripts/*.sh"
-cd C:\ftp\scripts
-docker build --no-cache -t ftp-onedrive:auto .
 docker run -d `
-  --name ftp-onedrive `
+  --name ftp-to-onedrive-watch `
+  -v C:\ftp\data:/data `
+  -v C:\rclone-config:/config/rclone `
   --restart unless-stopped `
-  -p 21:21 -p 30000-30009:30000-30009 `
-  -e FTP_USER_NAME=ftp-user `
-  -e FTP_USER_PASS=ftp-pass `
-  -e FTP_USER_HOME=/home/ftpusers/ftp-user `
-  -v C:\ftp\data:/home/ftpusers/ftp-user `
-  -v C:\ftp\scripts:/scripts `
-  -v C:\rclone-config:/config `
-  ftp-onedrive:auto
-
-✅ Expected log
-[INIT] Starting Pure-FTPd and rclone watcher...
-[OK] Pure-FTPd running with env user ftp-user
-
-
-Then connect from your FTP client using:
-
-Host: 192.168.2.7
-User: ftp-user
-Pass: ftp-pass
-Port: 21
-
-
-This completely removes the interactive password problem and keeps the rest of your pipeline intact.
-
-
-
-docker run -d `
-  --name ftp-onedrive `
-  --restart unless-stopped `
-  --cap-add=SETUID --cap-add=SETGID `
-  -p 21:21 -p 30000-30009:30000-30009 `
-  -e FTP_USER_NAME=ftp-user `
-  -e FTP_USER_PASS=ftp-pass `
-  -e FTP_USER_HOME=/home/ftpusers/ftp-user `
-  -v C:\ftp\data:/home/ftpusers/ftp-user `
-  -v C:\ftp\scripts:/scripts `
-  -v C:\rclone-config:/config `
-  ftp-onedrive:auto
-
+  --entrypoint /bin/sh `
+  rclone/rclone:latest `
+  -c "while true; do \
+      DATE=\$(date +%Y-%m-%d); \
+      rclone move /data onedrive:/Call-Recording/\${DATE}/ \
+        --delete-empty-src-dirs \
+        --log-file /config/rclone/upload.log \
+        --log-level INFO; \
+      sleep 60; \
+    done"
