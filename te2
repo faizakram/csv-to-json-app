@@ -1,116 +1,15 @@
-✅ Final: FTP → OneDrive Automation (Manual User Creation Flow)
-🧱 1️⃣ Run the Pure-FTPd Container
 docker run -d `
-  --name pure-ftp `
-  -p 21:21 -p 30000-30009:30000-30009 `
-  -v C:\ftp\data:/home/ftpusers/myuser `
-  -v C:\ftp\scripts:/scripts `
-  -e PUBLICHOST=192.168.2.7 `
-  stilliard/pure-ftpd:hardened `
-  pure-ftpd -E -j -R -P 192.168.2.7 -p 30000:30009
-
-
-✅ Explanation
-
-Setting	Purpose
-PUBLICHOST	External host IP for passive mode
-C:\ftp\data	Upload folder on your Windows host
-C:\ftp\scripts	Folder for the upload hook
-21 & 30000–30009	FTP + Passive ports
-👤 2️⃣ Create FTP User (Manual Method)
-
-Run the following commands inside the container:
-
-docker exec -it pure-ftp bash
-
-
-Now inside the container shell:
-
-pure-pw useradd myuser -u ftpuser -d /home/ftpusers/myuser
-
-
-You’ll be asked for a password — enter:
-
-mypassword
-
-
-Then build the database:
-
-pure-pw mkdb
-
-
-✅ Exit and restart container:
-
-docker restart pure-ftp
-
-⚙️ 3️⃣ Add the Upload Hook (to rename with Hostname + IP)
-Create file on host:
-C:\ftp\scripts\on-upload.sh
-
-
-Paste:
-
-#!/bin/sh
-# Arguments: $1=file path, $2=size, $3=user, $4=remote IP
-
-FILE_PATH="$1"
-FILENAME="$(basename "$FILE_PATH")"
-DIRNAME="$(dirname "$FILE_PATH")"
-CLIENT_IP="$4"
-
-# Resolve hostname (reverse DNS)
-CLIENT_HOST="$(nslookup "$CLIENT_IP" 2>/dev/null | awk '/name =/ {print $4}' | sed 's/\.$//')"
-[ -z "$CLIENT_HOST" ] && CLIENT_HOST="UnknownHost"
-
-# Short name only
-CLIENT_NAME="$(echo "$CLIENT_HOST" | cut -d'.' -f1)"
-PREFIX="${CLIENT_NAME}_${CLIENT_IP}"
-
-TARGET_DIR="${DIRNAME}/${PREFIX}"
-NEW_FILENAME="${PREFIX}_${FILENAME}"
-
-mkdir -p "$TARGET_DIR"
-mv "$FILE_PATH" "${TARGET_DIR}/${NEW_FILENAME}"
-
-⚙️ 4️⃣ Link the Script to FTP Container
-
-Restart container with hook enabled:
-
-docker rm -f pure-ftp
-docker run -d `
-  --name pure-ftp `
-  -p 21:21 -p 30000-30009:30000-30009 `
-  -v C:\ftp\data:/home/ftpusers/myuser `
-  -v C:\ftp\scripts:/scripts `
-  -e PUBLICHOST=192.168.2.7 `
-  -e FTP_UPLOADSCRIPT=/scripts/on-upload.sh `
-  stilliard/pure-ftpd:hardened `
-  pure-ftpd -E -j -R -P 192.168.2.7 -p 30000:30009
-
-
-Then recreate the user since we re-ran the container:
-
-docker exec -it pure-ftp pure-pw useradd myuser -u ftpuser -d /home/ftpusers/myuser
-docker exec -it pure-ftp pure-pw mkdb
-docker restart pure-ftp
-
-🧪 5️⃣ Test Upload
-
-From any FTP client (e.g., FileZilla):
-
-Field	Value
-Host	192.168.2.7
-Port	21
-Username	myuser
-Password	mypassword
-Encryption	None (Plain FTP)
-Mode	Passive
-
-Upload a test file → e.g., report.csv
-
-On the host (Windows), you’ll now see:
-
-C:\ftp\data\PC1_192.168.2.12\PC1_192.168.2.12_report.csv
-
-
-(If hostname can’t be resolved → you’ll see UnknownHost_192.168.2.12_report.csv)
+  --name ftp-to-onedrive-watch `
+  -v C:\ftp\data:/data `
+  -v C:\rclone-config:/config/rclone `
+  --restart unless-stopped `
+  --entrypoint /bin/sh `
+  rclone/rclone:latest `
+  -c "while true; do \
+      DATE=\$(date +%Y-%m-%d); \
+      rclone move /data onedrive:/Call-Recording/\${DATE}/ \
+        --delete-empty-src-dirs \
+        --log-file /config/rclone/upload.log \
+        --log-level INFO; \
+      sleep 60; \
+    done"
