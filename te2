@@ -20,3 +20,73 @@ docker run -d --name ftp-to-onedrive-watch -v C:\ftp\data:/data -v C:\rclone-con
 
 docker run -d --name ftp-to-onedrive-watch -v C:\ftp\data:/data -v C:\rclone-config:/config/rclone --restart unless-stopped --entrypoint /bin/sh rclone/rclone:latest -c 'while true; do DATE=$(date +%Y-%m-%d); rclone move /data onedrive:/Call-Recording/${DATE}/ --delete-empty-src-dirs --log-file /config/rclone/upload.log --log-level INFO; sleep 60; done'
 pkill pure-ftpd && pure-ftpd -E -j -R -P 192.168.2.7 -p 30000:30009 &
+
+
+
+✅ 1. Completely rebuild the container (clean start)
+
+On your Windows PowerShell host:
+
+docker rm -f pure-ftp
+
+
+Now run this tested working container (note the correct image name):
+
+docker run -d `
+  --name pure-ftp `
+  -p 21:21 -p 30000-30009:30000-30009 `
+  -v C:\ftp\data:/home/ftpusers/ftp-user `
+  -v C:\ftp\scripts:/scripts `
+  -e PUBLICHOST=192.168.2.7 `
+  stilliard/pure-ftpd:hardened `
+  pure-ftpd -E -j -R -P 192.168.2.7 -p 30000:30009
+
+
+Wait a few seconds for it to start:
+
+docker ps
+
+✅ 2. Go inside the container
+docker exec -it pure-ftp bash
+
+
+Then inside:
+
+mkdir -p /home/ftpusers/ftp-user
+chown -R ftpuser:ftpgroup /home/ftpusers/ftp-user
+chmod -R 755 /home/ftpusers/ftp-user
+
+✅ 3. Add the FTP user
+pure-pw useradd ftp-user -u ftpuser -d /home/ftpusers/ftp-user
+
+
+Enter password:
+
+ftp-pass
+
+
+Then build the DB:
+
+pure-pw mkdb
+
+
+Verify the DB exists:
+
+ls -l /etc/pure-ftpd/pureftpd.pdb
+
+
+✅ You should see a file, around a few KB in size.
+
+✅ 4. Restart the service inside container
+pkill pure-ftpd
+pure-ftpd -E -j -R -P 192.168.2.7 -p 30000:30009 &
+
+
+Check it’s running:
+
+ps aux | grep pure-ftpd
+
+
+Then exit:
+
+exit
