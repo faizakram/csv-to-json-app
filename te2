@@ -1,11 +1,7 @@
-docker run -d `
-  --name pure-ftp `
-  -p 21:21 -p 30000-30009:30000-30009 `
-  -v C:\ftp\data:/home/ftpusers/ftp-user `
-  -v C:\ftp\auth:/etc/pure-ftpd/passwd `
-  -v C:\ftp\scripts:/scripts `
-  -e FTP_UPLOADSCRIPT=/scripts/on-upload.sh `
-  -e PUBLICHOST=192.168.2.7 `
-  --restart unless-stopped `
-  stilliard/pure-ftpd:hardened `
-  pure-ftpd -E -j -R -l puredb:/etc/pure-ftpd/pureftpd.pdb -P 192.168.2.7 -p 30000:30009
+docker run -d --name ftp-to-onedrive-watch \
+  -v C:\ftp\data:/data \
+  -v C:\rclone-config:/config/rclone \
+  -e TZ=Asia/Kolkata \
+  --restart unless-stopped \
+  --entrypoint /bin/sh rclone/rclone:latest \
+  -c 'while true; do DATE=$(date +%Y-%m-%d); rclone move /data OneDrive:/Call-Recording/${DATE}/ --delete-empty-src-dirs --log-file /config/rclone/upload.log --log-level INFO; sleep 10; done'
